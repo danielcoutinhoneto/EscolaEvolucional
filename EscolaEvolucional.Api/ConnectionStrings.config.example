@@ -1,0 +1,5 @@
+<connectionStrings>
+  <add name="TesteEscola"
+       connectionString="Aqui é sua connection string"
+       providerName="System.Data.SqlClient" />
+</connectionStrings>

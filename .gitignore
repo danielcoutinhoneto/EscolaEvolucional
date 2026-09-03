@@ -266,6 +266,12 @@ ServiceFabricBackup/
 *.ldf
 *.ndf
 
+# Documentacao das Sprints
+/Sprints
+
+# Configuracao local com dados de conexao
+/EscolaEvolucional.Api/ConnectionStrings.config
+
 # Business Intelligence projects
 *.rdl.data
 *.bim.layout
