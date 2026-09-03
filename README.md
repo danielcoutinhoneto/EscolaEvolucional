@@ -4,7 +4,7 @@ API REST para controle de alunos, turmas e matrículas escolares, desenvolvida c
 
 O objetivo do projeto é demonstrar a construção de uma API em .NET Framework com separação de responsabilidades, consultas SQL explícitas e tratamento transacional das matrículas.
 
-> **Status atual:** o repositório contém a estrutura inicial do projeto ASP.NET Web API. Os endpoints, o acesso a dados com Dapper e os testes ainda serão implementados. As rotas documentadas abaixo representam o contrato previsto para a entrega.
+> **Status atual:** a configuração inicial de acesso a dados com Dapper está em desenvolvimento. Os endpoints e os testes ainda serão implementados. As rotas documentadas abaixo representam o contrato previsto para a entrega.
 
 ## Stack do projeto
 
@@ -43,31 +43,37 @@ cd EscolaEvolucional
 
 ### 2. Crie o banco de dados
 
-Execute no SQL Server o arquivo `script-banco.sql` recebido com o teste. Ele cria o banco `TesteEscola`, as tabelas `Aluno`, `Turma` e `Matricula` e também inclui dados para teste.
+Execute no SQL Server o arquivo [`database/script-banco.sql`](database/script-banco.sql). Ele cria o banco `TesteEscola`, as tabelas `Aluno`, `Turma` e `Matricula` e também inclui dados para teste.
 
-> O script ainda não está versionado neste repositório e deverá ser adicionado antes da entrega final.
+O arquivo recebido com o desafio foi versionado sem alterações estruturais nesta etapa. Foram avaliadas duas proteções adicionais para o banco:
+
+- uma restrição `CHECK` para impedir vagas negativas ou maiores que o total;
+- uma restrição ou índice único para impedir mais de uma matrícula do mesmo aluno na mesma turma.
+
+Essas proteções ainda não foram aplicadas ao script fornecido. A decisão será reavaliada durante a implementação da matrícula transacional e, caso sejam adicionadas, a alteração será registrada nesta documentação.
 
 ### 3. Configure a conexão
 
-A connection string será configurada no arquivo `EscolaEvolucional.Api/Web.config` com o nome `TesteEscola`. Para uma instância local do SQL Server Express, a configuração será semelhante a esta:
+A connection string real não é armazenada no `Web.config` nem versionada no repositório. O `Web.config` referencia o arquivo local `EscolaEvolucional.Api/ConnectionStrings.config`, que é ignorado pelo Git.
+
+Crie o arquivo local copiando o modelo fornecido:
+
+```powershell
+Copy-Item .\EscolaEvolucional.Api\ConnectionStrings.config.example `
+          .\EscolaEvolucional.Api\ConnectionStrings.config
+```
+
+Depois, abra `ConnectionStrings.config` e substitua o texto `Aqui é sua connection string` pela connection string do seu ambiente:
 
 ```xml
 <connectionStrings>
   <add name="TesteEscola"
-       connectionString="Data Source=.\SQLEXPRESS;Initial Catalog=TesteEscola;Integrated Security=True;TrustServerCertificate=True;"
+       connectionString="Aqui é sua connection string"
        providerName="System.Data.SqlClient" />
 </connectionStrings>
 ```
 
-Altere somente o `Data Source` de acordo com sua instalação:
-
-| Instalação | Data Source |
-| --- | --- |
-| SQL Server Express | `.\SQLEXPRESS` |
-| LocalDB | `(LocalDB)\MSSQLLocalDB` |
-| Instância padrão local | `localhost` |
-
-Não versione credenciais reais no `Web.config`.
+O nome `TesteEscola` deve ser preservado, pois é utilizado por `SqlConnectionFactory`. Não remova a regra do `.gitignore` e nunca force a inclusão de `ConnectionStrings.config` em um commit. Apenas o arquivo `.example`, que contém o marcador sem credenciais, deve ser versionado.
 
 ### 4. Restaure os pacotes e inicie a aplicação
 
