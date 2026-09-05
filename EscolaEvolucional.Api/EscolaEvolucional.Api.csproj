@@ -104,6 +104,8 @@
     <Compile Include="DTOs\Aluno\AlunoResponseDto.cs" />
     <Compile Include="DTOs\Aluno\AlunoUpdateDto.cs" />
     <Compile Include="DTOs\Erro\ErroResponseDto.cs" />
+    <Compile Include="DTOs\Matricula\MatriculaCreateDto.cs" />
+    <Compile Include="DTOs\Matricula\MatriculaResponseDto.cs" />
     <Compile Include="DTOs\Turma\TurmaResponseDto.cs" />
     <Compile Include="DTOs\Paginacao\PagedResult.cs" />
     <Compile Include="DTOs\Relatorio\AlunosPorTurmaResponseDto.cs" />
@@ -113,6 +115,9 @@
     <Compile Include="Infrastructure\Data\IDbConnectionFactory.cs" />
     <Compile Include="Infrastructure\Data\SqlConnectionFactory.cs" />
     <Compile Include="Models\Aluno.cs" />
+    <Compile Include="Models\Matricula.cs" />
+    <Compile Include="Models\MatriculaResultado.cs" />
+    <Compile Include="Models\MatriculaResultadoTipo.cs" />
     <Compile Include="Models\RelatorioAlunosPorTurma.cs" />
     <Compile Include="Models\Turma.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
