@@ -381,10 +381,6 @@ vstest.console .\EscolaEvolucional.Tests\bin\Debug\net48\EscolaEvolucional.Tests
 
 A última execução local da suíte aprovou 19 de 19 testes: 16 cobrem regras e mapeamento HTTP de matrícula, e 3 cobrem cache de turmas. Transação SQL, rollback físico e concorrência continuam cobertos pelas verificações funcionais da Sprint 04; testes de integração automatizados exigem um banco isolado e são uma evolução futura.
 
-## Licença
-
-Consulte o arquivo [LICENSE](LICENSE.txt).
-
 ## Cache de turmas
 
 `GET /api/turmas` usa `ITurmaCache` com a chave estável `turmas:listagem`. Nesta entrega, `MemoryTurmaCache` mantém entradas por chave durante um minuto, com bloqueio para concorrência e cópias defensivas. Em cache hit não há consulta SQL; em cache miss a lista é consultada e armazenada.
@@ -409,3 +405,7 @@ Não há requisito obrigatório pendente; os dois bônus propostos também foram
 - substituir o cache em memória por Redis compartilhado entre instâncias;
 - adicionar testes automatizados de integração com SQL Server isolado;
 - disponibilizar o jQuery localmente caso a aplicação precise funcionar sem acesso ao CDN.
+
+## Licença
+
+Este projeto é disponibilizado sob a [Licença MIT](LICENSE.txt). Copyright (c) 2026 Daniel Coutinho Neto.
