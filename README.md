@@ -4,7 +4,7 @@ API REST para controle de alunos, turmas e matrículas escolares, desenvolvida c
 
 O projeto utiliza .NET Framework 4.8, ASP.NET Web API 2, SQL Server e Dapper com SQL escrito manualmente. A organização em camadas mantém o tratamento HTTP no controller, as regras no service e o acesso ao banco no repository.
 
-> **Status atual:** os requisitos obrigatórios estão implementados: CRUD de alunos, turmas, relatório SQL, matrícula transacional e testes unitários das regras de matrícula. Cache de turmas e tela de alunos permanecem como bônus.
+> **Status atual:** os requisitos obrigatórios estão implementados: CRUD de alunos, turmas, relatório SQL, matrícula transacional e testes unitários das regras de matrícula. O cache de turmas foi implementado como bônus; a tela de alunos permanece como bônus planejado.
 
 ## Stack
 
@@ -33,7 +33,7 @@ O projeto utiliza .NET Framework 4.8, ASP.NET Web API 2, SQL Server e Dapper com
 
 ### Planejado
 
-- cache da listagem de turmas e tela simples de alunos, como bônus.
+- tela simples de alunos, como bônus.
 
 ## Pré-requisitos
 
@@ -379,6 +379,6 @@ Consulte o arquivo [LICENSE](LICENSE.txt).
 
 ## Cache de turmas
 
-`GET /api/turmas` usa `ITurmaCache`. Nesta entrega, `MemoryTurmaCache` mantém a lista por um minuto, com bloqueio para concorrência e cópias defensivas. Em cache hit não há consulta SQL; em cache miss a lista é consultada e armazenada.
+`GET /api/turmas` usa `ITurmaCache` com a chave estável `turmas:listagem`. Nesta entrega, `MemoryTurmaCache` mantém entradas por chave durante um minuto, com bloqueio para concorrência e cópias defensivas. Em cache hit não há consulta SQL; em cache miss a lista é consultada e armazenada.
 
 Após uma matrícula criada (`201`), o `MatriculaService` invalida o cache somente depois que o repository retorna sucesso — isto ocorre após o commit. Conflitos e rollback não invalidam a chave. Redis pode substituir `ITurmaCache` por outra implementação, sem alterar controllers ou services.
