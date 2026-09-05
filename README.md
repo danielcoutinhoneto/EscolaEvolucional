@@ -297,7 +297,7 @@ EscolaEvolucional.Api/
 
 Os controllers não contêm SQL. Os services coordenam os casos de uso e convertem modelos em DTOs. Os repositories concentram o SQL manual e o acesso ao banco com Dapper.
 
-O controller possui um construtor que recebe IAlunoService, permitindo testes e substituição da implementação. O construtor sem parâmetros monta as dependências para que o ASP.NET Web API 2 consiga criar o controller sem um contêiner de injeção de dependência. Em uma aplicação maior, essa composição seria centralizada em um contêiner configurado no início da aplicação.
+Os controllers possuem construtores que recebem interfaces de service, permitindo testes e substituição das implementações. Os construtores sem parâmetros montam as dependências para que o ASP.NET Web API 2 consiga criar AlunosController, TurmasController e RelatoriosController sem um contêiner de injeção de dependência. Em uma aplicação maior, essa composição seria centralizada em um contêiner configurado no início da aplicação.
 
 ## Verificações executadas no CRUD de alunos
 
