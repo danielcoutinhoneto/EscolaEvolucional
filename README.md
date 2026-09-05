@@ -4,7 +4,7 @@ API REST para controle de alunos, turmas e matrículas escolares, desenvolvida c
 
 O projeto utiliza .NET Framework 4.8, ASP.NET Web API 2, SQL Server e Dapper com SQL escrito manualmente. A organização em camadas mantém o tratamento HTTP no controller, as regras no service e o acesso ao banco no repository.
 
-> **Status atual:** os requisitos obrigatórios estão implementados: CRUD de alunos, turmas, relatório SQL, matrícula transacional e testes unitários das regras de matrícula. O cache de turmas foi implementado como bônus; a tela de alunos permanece como bônus planejado.
+> **Status atual:** os requisitos obrigatórios estão implementados: CRUD de alunos, turmas, relatório SQL, matrícula transacional e testes unitários das regras de matrícula. O cache de turmas foi implementado como bônus; a tela de consulta de alunos está implementada e em verificação final.
 
 ## Stack
 
@@ -29,11 +29,8 @@ O projeto utiliza .NET Framework 4.8, ASP.NET Web API 2, SQL Server e Dapper com
 - respostas JSON em camelCase;
 - matrícula transacional com validações, rollback e proteção contra concorrência;
 - testes unitários das regras e do mapeamento HTTP de matrícula;
-- respostas HTTP 200, 201, 400, 404 e 409 conforme o cenário.
-
-### Planejado
-
-- tela simples de alunos, como bônus.
+- respostas HTTP 200, 201, 400, 404 e 409 conforme o cenário;
+- tela responsiva de consulta de alunos, com filtro e paginação.
 
 ## Pré-requisitos
 
@@ -382,3 +379,13 @@ Consulte o arquivo [LICENSE](LICENSE.txt).
 `GET /api/turmas` usa `ITurmaCache` com a chave estável `turmas:listagem`. Nesta entrega, `MemoryTurmaCache` mantém entradas por chave durante um minuto, com bloqueio para concorrência e cópias defensivas. Em cache hit não há consulta SQL; em cache miss a lista é consultada e armazenada.
 
 Após uma matrícula criada (`201`), o `MatriculaService` invalida o cache somente depois que o repository retorna sucesso — isto ocorre após o commit. Conflitos e rollback não invalidam a chave. Redis pode substituir `ITurmaCache` por outra implementação, sem alterar controllers ou services.
+
+## Tela de alunos (bônus)
+
+Com a API em execução, abra [Content/TelaAlunos.html](EscolaEvolucional.Api/Content/TelaAlunos.html) pelo mesmo endereço da aplicação, por exemplo:
+
+~~~text
+https://localhost:44360/Content/TelaAlunos.html
+~~~
+
+A tela usa jQuery 3.7.1 carregado por CDN e consome `GET /api/alunos` na mesma origem. Ela apresenta nome, e-mail, nascimento e situação; permite filtrar por nome, navegar entre páginas, visualizar o total e trata carregamento, lista vazia e falha de comunicação. Os valores recebidos da API são escapados antes de serem inseridos na tabela.
