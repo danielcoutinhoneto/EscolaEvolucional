@@ -102,6 +102,17 @@ https://localhost:44360/
 
 O Visual Studio pode definir outra porta em uma configuração local.
 
+
+### Restauração pelo terminal (opcional)
+
+Em um Developer PowerShell com o cliente NuGet disponível, o mesmo preparo pode ser feito sem abrir a interface do Visual Studio:
+
+~~~powershell
+nuget restore .\EscolaEvolucional.slnx
+msbuild .\EscolaEvolucional.slnx /t:Build /p:Configuration=Debug
+~~~
+
+O `nuget restore` é necessário porque a API .NET Framework usa `packages.config`. O arquivo `ConnectionStrings.config` continua local: copie o modelo e informe a conexão antes de executar a API.
 ## API de alunos
 
 | Método | Rota | Resultado de sucesso |
@@ -389,3 +400,12 @@ https://localhost:44360/Content/TelaAlunos.html
 ~~~
 
 A tela usa jQuery 3.7.1 carregado por CDN e consome `GET /api/alunos` na mesma origem. Ela apresenta nome, e-mail, nascimento e situação; permite filtrar por nome, navegar entre páginas, visualizar o total e trata carregamento, lista vazia e falha de comunicação. Os valores recebidos da API são escapados antes de serem inseridos na tabela.
+
+## Limitações e evoluções futuras
+
+Não há requisito obrigatório pendente; os dois bônus propostos também foram entregues. Em uma evolução de produção, as melhorias prioritárias seriam:
+
+- centralizar a composição das dependências em um contêiner de injeção;
+- substituir o cache em memória por Redis compartilhado entre instâncias;
+- adicionar testes automatizados de integração com SQL Server isolado;
+- disponibilizar o jQuery localmente caso a aplicação precise funcionar sem acesso ao CDN.
