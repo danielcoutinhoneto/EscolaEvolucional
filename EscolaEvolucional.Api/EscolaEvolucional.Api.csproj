@@ -102,13 +102,16 @@
     <Compile Include="DTOs\Aluno\AlunoResponseDto.cs" />
     <Compile Include="DTOs\Aluno\AlunoUpdateDto.cs" />
     <Compile Include="DTOs\Erro\ErroResponseDto.cs" />
+    <Compile Include="DTOs\Turma\TurmaResponseDto.cs" />
     <Compile Include="DTOs\Paginacao\PagedResult.cs" />
+    <Compile Include="DTOs\Relatorio\AlunosPorTurmaResponseDto.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
     <Compile Include="Infrastructure\Data\IDbConnectionFactory.cs" />
     <Compile Include="Infrastructure\Data\SqlConnectionFactory.cs" />
     <Compile Include="Models\Aluno.cs" />
+    <Compile Include="Models\Turma.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Repository\Aluno\AlunoRepository.cs" />
     <Compile Include="Repository\Aluno\IAlunoRepository.cs" />
