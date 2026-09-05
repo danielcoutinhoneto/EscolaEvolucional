@@ -376,3 +376,9 @@ A última execução local aprovou 16 de 16 testes. Transação SQL, rollback f�
 ## Licença
 
 Consulte o arquivo [LICENSE](LICENSE.txt).
+
+## Cache de turmas
+
+`GET /api/turmas` usa `ITurmaCache`. Nesta entrega, `MemoryTurmaCache` mantém a lista por um minuto, com bloqueio para concorrência e cópias defensivas. Em cache hit não há consulta SQL; em cache miss a lista é consultada e armazenada.
+
+Após uma matrícula criada (`201`), o `MatriculaService` invalida o cache somente depois que o repository retorna sucesso — isto ocorre após o commit. Conflitos e rollback não invalidam a chave. Redis pode substituir `ITurmaCache` por outra implementação, sem alterar controllers ou services.
