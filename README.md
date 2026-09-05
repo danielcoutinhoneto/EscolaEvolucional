@@ -59,12 +59,12 @@ Execute no SQL Server o arquivo [database/script-banco.sql](database/script-banc
 
 O script cria o banco TesteEscola, as tabelas Aluno, Turma e Matricula e os dados iniciais utilizados nos testes.
 
-O arquivo recebido no desafio foi versionado sem alterações estruturais. Foram avaliadas duas proteções adicionais:
+O arquivo recebido no desafio foi versionado com duas proteções adicionais de integridade:
 
-- uma restrição CHECK para impedir que VagasDisponiveis seja negativa ou maior que VagasTotal;
-- uma restrição ou índice UNIQUE para impedir a matrícula repetida do mesmo aluno na mesma turma.
+- `CK_Turma_VagasDisponiveis`: restrição `CHECK` que impede `VagasDisponiveis` de ficar negativa ou maior que `VagasTotal`;
+- `UQ_Matricula_AlunoId_TurmaId`: restrição `UNIQUE` composta que impede a matrícula repetida do mesmo aluno na mesma turma.
 
-Essas proteções ainda não foram aplicadas. Elas serão reavaliadas durante a implementação da matrícula transacional e, se adicionadas, serão explicadas neste README.
+Essas restrições protegem o banco mesmo quando uma gravação não passa pela API ou quando duas requisições concorrentes tentam alterar os mesmos dados. As validações da aplicação continuam necessárias para devolver mensagens e status HTTP adequados.
 
 > Atenção: o script remove e recria as tabelas quando é executado. Dados locais existentes nessas tabelas serão perdidos.
 
