@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Consulta de alunos</title>
+    <link rel="stylesheet" href="TelaAlunos.css" />
+</head>
+<body>
+    <main class="pagina">
+        <h1>Consulta de alunos</h1>
+        <p class="descricao">Consulte os alunos cadastrados pela API da Escola Evolucional.</p>
+        <form id="filtro-alunos" class="filtro" novalidate>
+            <label for="nome">Nome do aluno</label>
+            <div class="filtro-acoes">
+                <input id="nome" name="nome" type="search" maxlength="120" placeholder="Digite parte do nome" autocomplete="off" />
+                <button type="submit">Buscar</button>
+            </div>
+        </form>
+        <p id="mensagem" class="mensagem" role="status" aria-live="polite"></p>
+        <div class="tabela-container">
+            <table>
+                <thead><tr><th scope="col">Nome</th><th scope="col">E-mail</th><th scope="col">Nascimento</th><th scope="col">Situação</th></tr></thead>
+                <tbody id="alunos"></tbody>
+            </table>
+        </div>
+        <nav class="paginacao" aria-label="Paginação da lista de alunos">
+            <button id="pagina-anterior" type="button">Anterior</button>
+            <span id="resumo-paginacao"></span>
+            <button id="proxima-pagina" type="button">Próxima</button>
+        </nav>
+    </main>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" crossorigin="anonymous"></script>
+    <script src="TelaAlunos.js"></script>
+</body>
+</html>

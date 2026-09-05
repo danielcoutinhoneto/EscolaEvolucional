@@ -4,7 +4,7 @@ API REST para controle de alunos, turmas e matrículas escolares, desenvolvida c
 
 O projeto utiliza .NET Framework 4.8, ASP.NET Web API 2, SQL Server e Dapper com SQL escrito manualmente. A organização em camadas mantém o tratamento HTTP no controller, as regras no service e o acesso ao banco no repository.
 
-> **Status atual:** o CRUD de alunos, a listagem de turmas e o relatório de alunos por turma estão implementados e validados localmente. A matrícula transacional, os testes automatizados e os itens bônus ainda fazem parte das próximas etapas.
+> **Status atual:** os requisitos obrigatórios estão implementados: CRUD de alunos, turmas, relatório SQL, matrícula transacional e testes unitários das regras de matrícula. O cache de turmas e a tela de consulta de alunos foram implementados como bônus.
 
 ## Stack
 
@@ -27,13 +27,10 @@ O projeto utiliza .NET Framework 4.8, ASP.NET Web API 2, SQL Server e Dapper com
 - relatório de alunos por turma agregado diretamente no SQL Server;
 - inclusão de turmas sem matrícula no relatório;
 - respostas JSON em camelCase;
-- respostas HTTP 200, 201, 400 e 404 conforme o cenário.
-
-### Planejado
-
-- matrícula com validações e transação;
-- testes unitários da matrícula;
-- cache da listagem de turmas e tela simples de alunos, como bônus.
+- matrícula transacional com validações, rollback e proteção contra concorrência;
+- testes unitários das regras e do mapeamento HTTP de matrícula;
+- respostas HTTP 200, 201, 400, 404 e 409 conforme o cenário;
+- tela responsiva de consulta de alunos, com filtro e paginação.
 
 ## Pré-requisitos
 
@@ -59,12 +56,12 @@ Execute no SQL Server o arquivo [database/script-banco.sql](database/script-banc
 
 O script cria o banco TesteEscola, as tabelas Aluno, Turma e Matricula e os dados iniciais utilizados nos testes.
 
-O arquivo recebido no desafio foi versionado sem alterações estruturais. Foram avaliadas duas proteções adicionais:
+O arquivo recebido no desafio foi versionado com duas proteções adicionais de integridade:
 
-- uma restrição CHECK para impedir que VagasDisponiveis seja negativa ou maior que VagasTotal;
-- uma restrição ou índice UNIQUE para impedir a matrícula repetida do mesmo aluno na mesma turma.
+- `CK_Turma_VagasDisponiveis`: restrição `CHECK` que impede `VagasDisponiveis` de ficar negativa ou maior que `VagasTotal`;
+- `UQ_Matricula_AlunoId_TurmaId`: restrição `UNIQUE` composta que impede a matrícula repetida do mesmo aluno na mesma turma.
 
-Essas proteções ainda não foram aplicadas. Elas serão reavaliadas durante a implementação da matrícula transacional e, se adicionadas, serão explicadas neste README.
+Essas restrições protegem o banco mesmo quando uma gravação não passa pela API ou quando duas requisições concorrentes tentam alterar os mesmos dados. As validações da aplicação continuam necessárias para devolver mensagens e status HTTP adequados.
 
 > Atenção: o script remove e recria as tabelas quando é executado. Dados locais existentes nessas tabelas serão perdidos.
 
@@ -105,6 +102,17 @@ https://localhost:44360/
 
 O Visual Studio pode definir outra porta em uma configuração local.
 
+
+### Restauração pelo terminal (opcional)
+
+Em um Developer PowerShell com o cliente NuGet disponível, o mesmo preparo pode ser feito sem abrir a interface do Visual Studio:
+
+~~~powershell
+nuget restore .\EscolaEvolucional.slnx
+msbuild .\EscolaEvolucional.slnx /t:Build /p:Configuration=Debug
+~~~
+
+O `nuget restore` é necessário porque a API .NET Framework usa `packages.config`. O arquivo `ConnectionStrings.config` continua local: copie o modelo e informe a conexão antes de executar a API.
 ## API de alunos
 
 | Método | Rota | Resultado de sucesso |
@@ -259,15 +267,38 @@ Exemplo:
 
 O relatório é agregado pelo SQL Server com LEFT JOIN, COUNT(m.Id) e GROUP BY. Dessa forma, turmas sem matrícula também aparecem com quantidade igual a zero, sem agrupamento em memória no C#.
 
-## Endpoint da próxima etapa
-
-### Matrículas
+## Matrículas
 
 | Método | Rota | Descrição |
 | --- | --- | --- |
 | POST | /api/matriculas | Matricula um aluno em uma turma |
 
-A matrícula deverá verificar aluno ativo, vaga disponível e duplicidade. A inserção da matrícula e o decremento da vaga deverão ocorrer na mesma transação.
+### Criar matrícula
+
+~~~http
+POST /api/matriculas
+Content-Type: application/json
+
+{
+  "alunoId": 1,
+  "turmaId": 2
+}
+~~~
+
+Em caso de sucesso, a API retorna `201 Created`:
+
+~~~json
+{
+  "id": 9,
+  "alunoId": 1,
+  "turmaId": 2,
+  "dataMatricula": "2026-09-05T09:19:51"
+}
+~~~
+
+A operação valida aluno existente e ativo, turma existente, vaga disponível e matrícula duplicada. O Repository abre uma única conexão, inicia uma transação serializável, insere a matrícula e decrementa a vaga. As duas gravações recebem o mesmo objeto de transação: qualquer falha executa rollback.
+
+Para concorrência, a turma é consultada com `UPDLOCK, HOLDLOCK` e a atualização só ocorre quando `VagasDisponiveis > 0`. A constraint `UNIQUE` do banco continua sendo a proteção final contra duplicidade.
 
 ## Status HTTP
 
@@ -277,7 +308,7 @@ A matrícula deverá verificar aluno ativo, vaga disponível e duplicidade. A in
 | 201 Created | Recurso criado |
 | 400 Bad Request | Rota, parâmetros ou corpo inválidos |
 | 404 Not Found | Registro não encontrado ou aluno já inativo na exclusão |
-| 409 Conflict | Regra de negócio impede uma matrícula, em etapa futura |
+| 409 Conflict | Regra de negócio impede a matrícula: aluno inativo, turma sem vaga ou duplicidade |
 | 500 Internal Server Error | Falha inesperada de aplicação ou infraestrutura |
 
 ## Organização do código
@@ -297,7 +328,7 @@ EscolaEvolucional.Api/
 
 Os controllers não contêm SQL. Os services coordenam os casos de uso e convertem modelos em DTOs. Os repositories concentram o SQL manual e o acesso ao banco com Dapper.
 
-Os controllers possuem construtores que recebem interfaces de service, permitindo testes e substituição das implementações. Os construtores sem parâmetros montam as dependências para que o ASP.NET Web API 2 consiga criar AlunosController, TurmasController e RelatoriosController sem um contêiner de injeção de dependência. Em uma aplicação maior, essa composição seria centralizada em um contêiner configurado no início da aplicação.
+Os controllers possuem construtores que recebem interfaces de service, permitindo testes e substituição das implementações. Os construtores sem parâmetros montam as dependências para que o ASP.NET Web API 2 consiga criar AlunosController, TurmasController, RelatoriosController e MatriculasController sem um contêiner de injeção de dependência. Em uma aplicação maior, essa composição seria centralizada em um contêiner configurado no início da aplicação.
 
 ## Verificações executadas no CRUD de alunos
 
@@ -324,8 +355,57 @@ Foram executados build em Debug e testes manuais com IIS Express, cobrindo:
 - consulta com LEFT JOIN, COUNT(m.Id), GROUP BY e ordenação determinística;
 - ausência de SQL e agrupamento nos controllers.
 
-Ainda não existe uma suíte de testes automatizados. Ela será adicionada prioritariamente para as regras da matrícula.
+A suíte de testes automatizados das regras de matrícula está documentada na seção de testes abaixo.
+
+## Verificações executadas na matrícula
+
+Foram executados build em Debug e testes manuais com IIS Express, cobrindo:
+
+- criação válida, com uma matrícula inserida e uma vaga decrementada;
+- payload e IDs inválidos (`400 Bad Request`);
+- aluno e turma inexistentes (`404 Not Found`);
+- aluno inativo, turma lotada e matrícula duplicada (`409 Conflict`);
+- rollback quando uma falha é provocada após o `INSERT`, sem matrícula nem vaga alterada;
+- duas requisições concorrentes para a última vaga: uma retorna `201 Created`, a outra `409 Conflict`, sem ultrapassar a capacidade da turma.
+
+## Testes automatizados da matrícula
+
+O projeto `EscolaEvolucional.Tests` usa MSTest e é direcionado ao .NET Framework 4.8. Ele não acessa SQL Server: usa implementações falsas das interfaces para testar o `MatriculaService`, os invariantes de `MatriculaResultado` e a conversão de resultados para HTTP no `MatriculasController`.
+
+No Visual Studio, abra o **Gerenciador de Testes** e selecione **Executar Todos**. Em um Developer PowerShell do Visual Studio, a execução também pode ser feita assim:
+
+~~~powershell
+msbuild .\EscolaEvolucional.Tests\EscolaEvolucional.Tests.csproj /t:Rebuild /p:Configuration=Debug
+vstest.console .\EscolaEvolucional.Tests\bin\Debug\net48\EscolaEvolucional.Tests.dll /Platform:x64
+~~~
+
+A última execução local da suíte aprovou 19 de 19 testes: 16 cobrem regras e mapeamento HTTP de matrícula, e 3 cobrem cache de turmas. Transação SQL, rollback físico e concorrência continuam cobertos pelas verificações funcionais da Sprint 04; testes de integração automatizados exigem um banco isolado e são uma evolução futura.
 
 ## Licença
 
-Consulte o arquivo [LICENSE.txt](LICENSE.txt).
+Consulte o arquivo [LICENSE](LICENSE.txt).
+
+## Cache de turmas
+
+`GET /api/turmas` usa `ITurmaCache` com a chave estável `turmas:listagem`. Nesta entrega, `MemoryTurmaCache` mantém entradas por chave durante um minuto, com bloqueio para concorrência e cópias defensivas. Em cache hit não há consulta SQL; em cache miss a lista é consultada e armazenada.
+
+Após uma matrícula criada (`201`), o `MatriculaService` invalida o cache somente depois que o repository retorna sucesso — isto ocorre após o commit. Conflitos e rollback não invalidam a chave. Redis pode substituir `ITurmaCache` por outra implementação, sem alterar controllers ou services.
+
+## Tela de alunos (bônus)
+
+Com a API em execução, abra [Content/TelaAlunos.html](EscolaEvolucional.Api/Content/TelaAlunos.html) pelo mesmo endereço da aplicação, por exemplo:
+
+~~~text
+https://localhost:44360/Content/TelaAlunos.html
+~~~
+
+A tela usa jQuery 3.7.1 carregado por CDN e consome `GET /api/alunos` na mesma origem. Ela apresenta nome, e-mail, nascimento e situação; permite filtrar por nome, navegar entre páginas, visualizar o total e trata carregamento, lista vazia e falha de comunicação. Os valores recebidos da API são escapados antes de serem inseridos na tabela.
+
+## Limitações e evoluções futuras
+
+Não há requisito obrigatório pendente; os dois bônus propostos também foram entregues. Em uma evolução de produção, as melhorias prioritárias seriam:
+
+- centralizar a composição das dependências em um contêiner de injeção;
+- substituir o cache em memória por Redis compartilhado entre instâncias;
+- adicionar testes automatizados de integração com SQL Server isolado;
+- disponibilizar o jQuery localmente caso a aplicação precise funcionar sem acesso ao CDN.

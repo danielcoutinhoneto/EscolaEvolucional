@@ -1,0 +1,22 @@
+:root { color-scheme: light; font-family: Arial, sans-serif; color: #1f2937; background: #f3f4f6; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+.pagina { max-width: 1000px; margin: 32px auto; padding: 24px; background: #ffffff; border-radius: 8px; box-shadow: 0 1px 3px rgba(0, 0, 0, .12); }
+h1 { margin: 0; font-size: 1.6rem; }
+.descricao { color: #4b5563; }
+.filtro label { display: block; margin-bottom: 6px; font-weight: 700; }
+.filtro-acoes { display: flex; gap: 8px; }
+input { flex: 1; min-width: 0; padding: 10px; border: 1px solid #9ca3af; border-radius: 4px; }
+button { padding: 10px 16px; border: 0; border-radius: 4px; background: #166534; color: #fff; cursor: pointer; }
+button:disabled { background: #9ca3af; cursor: not-allowed; }
+.mensagem { min-height: 24px; margin: 16px 0 8px; }
+.mensagem.erro { color: #b91c1c; }
+.tabela-container { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 12px; text-align: left; border-bottom: 1px solid #d1d5db; }
+th { background: #f9fafb; }
+.status { font-weight: 700; }
+.status.ativo { color: #166534; }
+.status.inativo { color: #b91c1c; }
+.paginacao { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 20px; }
+@media (max-width: 600px) { .pagina { margin: 0; min-height: 100vh; border-radius: 0; padding: 16px; } .filtro-acoes { flex-direction: column; } th, td { padding: 10px 8px; } .paginacao { flex-wrap: wrap; } }
