@@ -4,7 +4,7 @@ API REST para controle de alunos, turmas e matrículas escolares, desenvolvida c
 
 O projeto utiliza .NET Framework 4.8, ASP.NET Web API 2, SQL Server e Dapper com SQL escrito manualmente. A organização em camadas mantém o tratamento HTTP no controller, as regras no service e o acesso ao banco no repository.
 
-> **Status atual:** o CRUD de alunos, a listagem de turmas e o relatório de alunos por turma estão implementados e validados localmente. A matrícula transacional, os testes automatizados e os itens bônus ainda fazem parte das próximas etapas.
+> **Status atual:** os requisitos obrigatórios estão implementados: CRUD de alunos, turmas, relatório SQL, matrícula transacional e testes unitários das regras de matrícula. Cache de turmas e tela de alunos permanecem como bônus.
 
 ## Stack
 
@@ -27,12 +27,12 @@ O projeto utiliza .NET Framework 4.8, ASP.NET Web API 2, SQL Server e Dapper com
 - relatório de alunos por turma agregado diretamente no SQL Server;
 - inclusão de turmas sem matrícula no relatório;
 - respostas JSON em camelCase;
-- respostas HTTP 200, 201, 400 e 404 conforme o cenário.
+- matrícula transacional com validações, rollback e proteção contra concorrência;
+- testes unitários das regras e do mapeamento HTTP de matrícula;
+- respostas HTTP 200, 201, 400, 404 e 409 conforme o cenário.
 
 ### Planejado
 
-- matrícula com validações e transação;
-- testes unitários da matrícula;
 - cache da listagem de turmas e tela simples de alunos, como bônus.
 
 ## Pré-requisitos
@@ -347,7 +347,7 @@ Foram executados build em Debug e testes manuais com IIS Express, cobrindo:
 - consulta com LEFT JOIN, COUNT(m.Id), GROUP BY e ordenação determinística;
 - ausência de SQL e agrupamento nos controllers.
 
-Ainda não existe uma suíte de testes automatizados. Ela será adicionada prioritariamente para as regras da matrícula.
+A suíte de testes automatizados das regras de matrícula está documentada na seção de testes abaixo.
 
 ## Verificações executadas na matrícula
 
@@ -360,8 +360,19 @@ Foram executados build em Debug e testes manuais com IIS Express, cobrindo:
 - rollback quando uma falha é provocada após o `INSERT`, sem matrícula nem vaga alterada;
 - duas requisições concorrentes para a última vaga: uma retorna `201 Created`, a outra `409 Conflict`, sem ultrapassar a capacidade da turma.
 
-A Sprint de testes automatizados das regras de matrícula permanece planejada como melhoria bônus. Os testes acima confirmam o comportamento atual da API, mas não substituem uma suíte automatizada.
+## Testes automatizados da matrícula
+
+O projeto `EscolaEvolucional.Tests` usa MSTest e é direcionado ao .NET Framework 4.8. Ele não acessa SQL Server: usa implementações falsas das interfaces para testar o `MatriculaService`, os invariantes de `MatriculaResultado` e a conversão de resultados para HTTP no `MatriculasController`.
+
+No Visual Studio, abra o **Gerenciador de Testes** e selecione **Executar Todos**. Em um Developer PowerShell do Visual Studio, a execução também pode ser feita assim:
+
+~~~powershell
+msbuild .\EscolaEvolucional.Tests\EscolaEvolucional.Tests.csproj /t:Rebuild /p:Configuration=Debug
+vstest.console .\EscolaEvolucional.Tests\bin\Debug\net48\EscolaEvolucional.Tests.dll /Platform:x64
+~~~
+
+A última execução local aprovou 16 de 16 testes. Transação SQL, rollback físico e concorrência continuam cobertos pelas verificações funcionais da Sprint 04; testes de integração automatizados exigem um banco isolado e são uma evolução futura.
 
 ## Licença
 
-Consulte o arquivo [LICENSE.txt](LICENSE).
+Consulte o arquivo [LICENSE](LICENSE.txt).
