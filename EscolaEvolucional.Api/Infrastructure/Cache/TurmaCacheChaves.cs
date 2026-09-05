@@ -1,0 +1,1 @@
+namespace EscolaEvolucional.Api.Infrastructure.Cache { public static class TurmaCacheChaves { public const string Listagem = "turmas:listagem"; } }
