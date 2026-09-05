@@ -4,7 +4,7 @@ API REST para controle de alunos, turmas e matrículas escolares, desenvolvida c
 
 O projeto utiliza .NET Framework 4.8, ASP.NET Web API 2, SQL Server e Dapper com SQL escrito manualmente. A organização em camadas mantém o tratamento HTTP no controller, as regras no service e o acesso ao banco no repository.
 
-> **Status atual:** o CRUD de alunos está implementado e foi validado localmente. Turmas, matrícula transacional, relatório, cache e testes automatizados ainda fazem parte das próximas etapas.
+> **Status atual:** o CRUD de alunos, a listagem de turmas e o relatório de alunos por turma estão implementados e validados localmente. A matrícula transacional, os testes automatizados e os itens bônus ainda fazem parte das próximas etapas.
 
 ## Stack
 
@@ -23,14 +23,15 @@ O projeto utiliza .NET Framework 4.8, ASP.NET Web API 2, SQL Server e Dapper com
 - listagem paginada com total de registros;
 - filtro opcional pelo nome do aluno;
 - validação dos dados de entrada;
+- listagem de turmas com vagas totais e disponíveis;
+- relatório de alunos por turma agregado diretamente no SQL Server;
+- inclusão de turmas sem matrícula no relatório;
 - respostas JSON em camelCase;
 - respostas HTTP 200, 201, 400 e 404 conforme o cenário.
 
 ### Planejado
 
-- listagem de turmas com vagas restantes;
 - matrícula com validações e transação;
-- relatório de alunos por turma executado em SQL;
 - testes unitários da matrícula;
 - cache da listagem de turmas e tela simples de alunos, como bônus.
 
@@ -209,13 +210,56 @@ Erros de validação são respondidos com 400, sem transformar um erro esperado 
 
 Quando não há erros associados a campos, errors pode ser null.
 
-## Endpoints das próximas etapas
-
-### Turmas
+## API de turmas
 
 | Método | Rota | Descrição |
 | --- | --- | --- |
-| GET | /api/turmas | Lista turmas e vagas restantes |
+| GET | /api/turmas | Lista turmas com vagas totais e disponíveis — 200 |
+
+O endpoint não utiliza paginação porque ela não foi solicitada para turmas. Quando não houver registros, a resposta é 200 OK com uma coleção vazia.
+
+Exemplo:
+
+~~~json
+[
+  {
+    "id": 1,
+    "nome": "3A - Ensino Medio",
+    "periodo": "Manha",
+    "vagasTotal": 30,
+    "vagasDisponiveis": 28
+  }
+]
+~~~
+
+## API de relatórios
+
+| Método | Rota | Descrição |
+| --- | --- | --- |
+| GET | /api/relatorios/alunos-por-turma | Retorna turma, quantidade de alunos e vagas restantes — 200 |
+
+Exemplo:
+
+~~~json
+[
+  {
+    "turmaId": 1,
+    "turmaNome": "3A - Ensino Medio",
+    "quantidadeAlunos": 2,
+    "vagasRestantes": 28
+  },
+  {
+    "turmaId": 2,
+    "turmaNome": "3B - Ensino Medio",
+    "quantidadeAlunos": 0,
+    "vagasRestantes": 30
+  }
+]
+~~~
+
+O relatório é agregado pelo SQL Server com LEFT JOIN, COUNT(m.Id) e GROUP BY. Dessa forma, turmas sem matrícula também aparecem com quantidade igual a zero, sem agrupamento em memória no C#.
+
+## Endpoint da próxima etapa
 
 ### Matrículas
 
@@ -224,14 +268,6 @@ Quando não há erros associados a campos, errors pode ser null.
 | POST | /api/matriculas | Matricula um aluno em uma turma |
 
 A matrícula deverá verificar aluno ativo, vaga disponível e duplicidade. A inserção da matrícula e o decremento da vaga deverão ocorrer na mesma transação.
-
-### Relatórios
-
-| Método | Rota | Descrição |
-| --- | --- | --- |
-| GET | /api/relatorios/alunos-por-turma | Retorna turma, alunos matriculados e vagas restantes |
-
-O agrupamento será executado pelo SQL Server com JOIN e GROUP BY, sem montar o relatório em memória no C#.
 
 ## Status HTTP
 
@@ -259,7 +295,7 @@ EscolaEvolucional.Api/
 +-- Web.config          # Configuração geral da aplicação
 ~~~
 
-AlunosController não contém SQL. AlunoService concentra validações e decisões do caso de uso. AlunoRepository contém comandos SQL parametrizados.
+Os controllers não contêm SQL. Os services coordenam os casos de uso e convertem modelos em DTOs. Os repositories concentram o SQL manual e o acesso ao banco com Dapper.
 
 O controller possui um construtor que recebe IAlunoService, permitindo testes e substituição da implementação. O construtor sem parâmetros monta as dependências para que o ASP.NET Web API 2 consiga criar o controller sem um contêiner de injeção de dependência. Em uma aplicação maior, essa composição seria centralizada em um contêiner configurado no início da aplicação.
 
@@ -274,6 +310,19 @@ Foram executados build em Debug e testes manuais da API com IIS Express, cobrind
 - atualização válida, inexistente e com data futura;
 - exclusão lógica e segunda tentativa de exclusão;
 - confirmação de que o registro permaneceu no banco com Ativo igual a false.
+
+## Verificações executadas em turmas e relatório
+
+Foram executados build em Debug e testes manuais com IIS Express, cobrindo:
+
+- GET /api/turmas com as quatro turmas do banco;
+- vagas totais e disponíveis conferidas com o script inicial;
+- GET /api/relatorios/alunos-por-turma;
+- contagens 2, 0, 4 e 2 para as quatro turmas;
+- presença da turma 3B - Ensino Medio com quantidade zero;
+- contrato JSON em camelCase;
+- consulta com LEFT JOIN, COUNT(m.Id), GROUP BY e ordenação determinística;
+- ausência de SQL e agrupamento nos controllers.
 
 Ainda não existe uma suíte de testes automatizados. Ela será adicionada prioritariamente para as regras da matrícula.
 

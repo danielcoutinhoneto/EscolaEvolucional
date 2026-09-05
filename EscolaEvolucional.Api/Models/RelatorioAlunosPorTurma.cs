@@ -1,6 +1,6 @@
-﻿namespace EscolaEvolucional.Api.DTOs.Relatorio
+namespace EscolaEvolucional.Api.Models
 {
-    public class AlunosPorTurmaResponseDto
+    public class RelatorioAlunosPorTurma
     {
         public int TurmaId { get; set; }
         public string TurmaNome { get; set; }
