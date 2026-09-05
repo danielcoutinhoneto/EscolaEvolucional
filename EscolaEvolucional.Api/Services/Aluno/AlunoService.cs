@@ -13,6 +13,11 @@ namespace EscolaEvolucional.Api.Services.Aluno
 
         public AlunoService(IAlunoRepository alunoRepository)
         {
+            if (alunoRepository == null)
+            {
+                throw new ArgumentNullException(nameof(alunoRepository));
+            }
+
             _alunoRepository = alunoRepository;
         }
 

@@ -2,6 +2,7 @@
 using EscolaEvolucional.Api.DTOs;
 using EscolaEvolucional.Api.Infrastructure.Data;
 using EscolaEvolucional.Api.Models;
+using System;
 using System.Linq;
 
 namespace EscolaEvolucional.Api.Repository
@@ -12,6 +13,11 @@ namespace EscolaEvolucional.Api.Repository
 
         public AlunoRepository(IDbConnectionFactory connectionFactory)
         {
+            if (connectionFactory == null)
+            {
+                throw new ArgumentNullException(nameof(connectionFactory));
+            }
+
             _connectionFactory = connectionFactory;
         }
 
