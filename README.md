@@ -2,26 +2,37 @@
 
 API REST para controle de alunos, turmas e matrículas escolares, desenvolvida como parte do teste prático para a vaga de **Analista de Desenvolvimento .NET Pleno/Sênior da Evolucional**.
 
-O objetivo do projeto é demonstrar a construção de uma API em .NET Framework com separação de responsabilidades, consultas SQL explícitas e tratamento transacional das matrículas.
+O projeto utiliza .NET Framework 4.8, ASP.NET Web API 2, SQL Server e Dapper com SQL escrito manualmente. A organização em camadas mantém o tratamento HTTP no controller, as regras no service e o acesso ao banco no repository.
 
-> **Status atual:** a configuração inicial de acesso a dados com Dapper está em desenvolvimento. Os endpoints e os testes ainda serão implementados. As rotas documentadas abaixo representam o contrato previsto para a entrega.
+> **Status atual:** o CRUD de alunos está implementado e foi validado localmente. Turmas, matrícula transacional, relatório, cache e testes automatizados ainda fazem parte das próximas etapas.
 
-## Stack do projeto
+## Stack
 
 - .NET Framework 4.8;
 - ASP.NET Web API 2;
 - C#;
 - SQL Server;
-- Dapper com SQL escrito manualmente;
+- Dapper;
 - Newtonsoft.Json.
 
 ## Funcionalidades
 
-- CRUD de alunos com exclusão lógica;
-- listagem paginada de alunos e filtro opcional por nome;
-- consulta de turmas com o número de vagas restantes;
-- matrícula de aluno em turma com controle transacional;
-- relatório de alunos por turma gerado diretamente no SQL Server.
+### Implementado
+
+- cadastro, consulta, atualização e exclusão lógica de alunos;
+- listagem paginada com total de registros;
+- filtro opcional pelo nome do aluno;
+- validação dos dados de entrada;
+- respostas JSON em camelCase;
+- respostas HTTP 200, 201, 400 e 404 conforme o cenário.
+
+### Planejado
+
+- listagem de turmas com vagas restantes;
+- matrícula com validações e transação;
+- relatório de alunos por turma executado em SQL;
+- testes unitários da matrícula;
+- cache da listagem de turmas e tela simples de alunos, como bônus.
 
 ## Pré-requisitos
 
@@ -34,77 +45,111 @@ O objetivo do projeto é demonstrar a construção de uma API em .NET Framework 
 
 ## Como executar
 
-### 1. Clone o repositório
+### 1. Clonar o repositório
 
-```powershell
+~~~powershell
 git clone https://github.com/danielcoutinhoneto/EscolaEvolucional.git
 cd EscolaEvolucional
-```
+~~~
 
-### 2. Crie o banco de dados
+### 2. Criar o banco de dados
 
-Execute no SQL Server o arquivo [`database/script-banco.sql`](database/script-banco.sql). Ele cria o banco `TesteEscola`, as tabelas `Aluno`, `Turma` e `Matricula` e também inclui dados para teste.
+Execute no SQL Server o arquivo [database/script-banco.sql](database/script-banco.sql).
 
-O arquivo recebido com o desafio foi versionado sem alterações estruturais nesta etapa. Foram avaliadas duas proteções adicionais para o banco:
+O script cria o banco TesteEscola, as tabelas Aluno, Turma e Matricula e os dados iniciais utilizados nos testes.
 
-- uma restrição `CHECK` para impedir vagas negativas ou maiores que o total;
-- uma restrição ou índice único para impedir mais de uma matrícula do mesmo aluno na mesma turma.
+O arquivo recebido no desafio foi versionado sem alterações estruturais. Foram avaliadas duas proteções adicionais:
 
-Essas proteções ainda não foram aplicadas ao script fornecido. A decisão será reavaliada durante a implementação da matrícula transacional e, caso sejam adicionadas, a alteração será registrada nesta documentação.
+- uma restrição CHECK para impedir que VagasDisponiveis seja negativa ou maior que VagasTotal;
+- uma restrição ou índice UNIQUE para impedir a matrícula repetida do mesmo aluno na mesma turma.
 
-### 3. Configure a conexão
+Essas proteções ainda não foram aplicadas. Elas serão reavaliadas durante a implementação da matrícula transacional e, se adicionadas, serão explicadas neste README.
 
-A connection string real não é armazenada no `Web.config` nem versionada no repositório. O `Web.config` referencia o arquivo local `EscolaEvolucional.Api/ConnectionStrings.config`, que é ignorado pelo Git.
+> Atenção: o script remove e recria as tabelas quando é executado. Dados locais existentes nessas tabelas serão perdidos.
 
-Crie o arquivo local copiando o modelo fornecido:
+### 3. Configurar a conexão local
 
-```powershell
-Copy-Item .\EscolaEvolucional.Api\ConnectionStrings.config.example `
-          .\EscolaEvolucional.Api\ConnectionStrings.config
-```
+A connection string real não fica no Web.config e não deve ser enviada ao Git. O Web.config referencia o arquivo local EscolaEvolucional.Api/ConnectionStrings.config, que está ignorado no .gitignore.
 
-Depois, abra `ConnectionStrings.config` e substitua o texto `Aqui é sua connection string` pela connection string do seu ambiente:
+Copie o modelo:
 
-```xml
+~~~powershell
+Copy-Item ./EscolaEvolucional.Api/ConnectionStrings.config.example ./EscolaEvolucional.Api/ConnectionStrings.config
+~~~
+
+Depois, abra ConnectionStrings.config e substitua somente o marcador pela conexão do seu ambiente:
+
+~~~xml
 <connectionStrings>
   <add name="TesteEscola"
        connectionString="Aqui é sua connection string"
        providerName="System.Data.SqlClient" />
 </connectionStrings>
-```
+~~~
 
-O nome `TesteEscola` deve ser preservado, pois é utilizado por `SqlConnectionFactory`. Não remova a regra do `.gitignore` e nunca force a inclusão de `ConnectionStrings.config` em um commit. Apenas o arquivo `.example`, que contém o marcador sem credenciais, deve ser versionado.
+O nome TesteEscola deve ser preservado porque SqlConnectionFactory procura a configuração por esse nome. Apenas ConnectionStrings.config.example deve ser versionado.
 
-### 4. Restaure os pacotes e inicie a aplicação
+### 4. Restaurar e executar
 
-1. Abra `EscolaEvolucional.slnx` no Visual Studio.
+1. Abra EscolaEvolucional.slnx no Visual Studio.
 2. Restaure os pacotes NuGet da solução.
-3. Defina `EscolaEvolucional.Api` como projeto de inicialização.
-4. Execute com `F5` ou `Ctrl+F5`.
+3. Defina EscolaEvolucional.Api como projeto de inicialização.
+4. Execute com F5 ou Ctrl+F5.
 
-O projeto está configurado para usar IIS Express no endereço:
+A configuração do projeto usa IIS Express em:
 
-```text
+~~~text
 https://localhost:44360/
-```
+~~~
 
-A porta pode ser diferente caso o Visual Studio gere outra configuração local.
+O Visual Studio pode definir outra porta em uma configuração local.
 
-## Endpoints
+## API de alunos
 
-### Alunos
-
-| Método | Rota | Descrição |
+| Método | Rota | Resultado de sucesso |
 | --- | --- | --- |
-| `GET` | `/api/alunos?page=1&pageSize=10&nome=Ana` | Lista os alunos com paginação e filtro opcional por nome |
-| `GET` | `/api/alunos/{id}` | Consulta um aluno pelo identificador |
-| `POST` | `/api/alunos` | Cadastra um aluno |
-| `PUT` | `/api/alunos/{id}` | Atualiza um aluno |
-| `DELETE` | `/api/alunos/{id}` | Desativa o aluno sem removê-lo do banco |
+| GET | /api/alunos?page=1&pageSize=10&nome=Ana | Lista paginada — 200 |
+| GET | /api/alunos/{id} | Aluno encontrado — 200 |
+| POST | /api/alunos | Aluno criado — 201 |
+| PUT | /api/alunos/{id} | Aluno atualizado — 200 |
+| DELETE | /api/alunos/{id} | Aluno desativado — 200 |
 
-Exemplo de cadastro:
+### Paginação e filtro
 
-```http
+- page é opcional, começa em 1 e possui valor padrão 1;
+- pageSize é opcional, possui valor padrão 10 e aceita valores entre 1 e 100;
+- nome é opcional e busca uma parte do nome;
+- total informa quantos registros atendem ao filtro, independentemente da página;
+- a ordenação por Id torna a paginação determinística.
+
+Exemplo:
+
+~~~http
+GET /api/alunos?page=1&pageSize=2&nome=Ana HTTP/1.1
+Host: localhost:44360
+~~~
+
+~~~json
+{
+  "items": [
+    {
+      "id": 1,
+      "nome": "Ana Souza",
+      "email": "ana.souza@email.com",
+      "dataNascimento": "2006-03-14T00:00:00",
+      "ativo": true,
+      "dataCadastro": "2026-09-03T10:00:00"
+    }
+  ],
+  "page": 1,
+  "pageSize": 2,
+  "total": 1
+}
+~~~
+
+### Cadastrar aluno
+
+~~~http
 POST /api/alunos HTTP/1.1
 Host: localhost:44360
 Content-Type: application/json
@@ -114,104 +159,123 @@ Content-Type: application/json
   "email": "maria.silva@email.com",
   "dataNascimento": "2006-05-20"
 }
-```
+~~~
 
-Exemplo de resposta paginada:
+Nome, e-mail e data de nascimento são obrigatórios. Nome e e-mail aceitam no máximo 120 caracteres, o e-mail precisa ter formato válido e a data de nascimento não pode estar no futuro.
 
-```json
+No sucesso, a API responde 201 Created, retorna o aluno criado e informa a rota de consulta no cabeçalho Location.
+
+### Atualizar aluno
+
+~~~http
+PUT /api/alunos/1 HTTP/1.1
+Host: localhost:44360
+Content-Type: application/json
+
 {
-  "items": [
-    {
-      "id": 1,
-      "nome": "Ana Souza",
-      "email": "ana.souza@email.com",
-      "dataNascimento": "2006-03-14",
-      "ativo": true
-    }
-  ],
-  "page": 1,
-  "pageSize": 10,
-  "total": 8
+  "nome": "Ana Souza Atualizada",
+  "email": "ana.atualizada@email.com",
+  "dataNascimento": "2006-03-14"
 }
-```
+~~~
+
+A atualização altera somente alunos ativos. Um identificador inexistente ou pertencente a aluno inativo retorna 404.
+
+### Excluir aluno
+
+~~~http
+DELETE /api/alunos/1 HTTP/1.1
+Host: localhost:44360
+~~~
+
+A exclusão é lógica: a API executa UPDATE e altera Ativo para false. O registro não é apagado do banco.
+
+A listagem e a consulta por identificador mantêm os alunos inativos visíveis e informam ativo: false. Isso permite conferir a exclusão lógica. Uma segunda tentativa de excluir o mesmo aluno retorna 404.
+
+### Formato de erro
+
+Erros de validação são respondidos com 400, sem transformar um erro esperado em 500:
+
+~~~json
+{
+  "message": "A requisição contém dados inválidos.",
+  "errors": {
+    "alunoCreateDto.Email": [
+      "O e-mail informado é inválido."
+    ]
+  }
+}
+~~~
+
+Quando não há erros associados a campos, errors pode ser null.
+
+## Endpoints das próximas etapas
 
 ### Turmas
 
 | Método | Rota | Descrição |
 | --- | --- | --- |
-| `GET` | `/api/turmas` | Lista as turmas com a quantidade de vagas restantes |
+| GET | /api/turmas | Lista turmas e vagas restantes |
 
 ### Matrículas
 
 | Método | Rota | Descrição |
 | --- | --- | --- |
-| `POST` | `/api/matriculas` | Matricula um aluno em uma turma |
+| POST | /api/matriculas | Matricula um aluno em uma turma |
 
-Exemplo:
-
-```http
-POST /api/matriculas HTTP/1.1
-Host: localhost:44360
-Content-Type: application/json
-
-{
-  "alunoId": 1,
-  "turmaId": 2
-}
-```
-
-A matrícula deve respeitar as seguintes regras:
-
-- aluno e turma devem existir;
-- o aluno deve estar ativo;
-- a turma deve possuir vaga disponível;
-- o aluno não pode estar matriculado duas vezes na mesma turma;
-- a matrícula e o decremento da vaga devem ocorrer na mesma transação.
+A matrícula deverá verificar aluno ativo, vaga disponível e duplicidade. A inserção da matrícula e o decremento da vaga deverão ocorrer na mesma transação.
 
 ### Relatórios
 
 | Método | Rota | Descrição |
 | --- | --- | --- |
-| `GET` | `/api/relatorios/alunos-por-turma` | Retorna nome da turma, quantidade de alunos e vagas restantes |
+| GET | /api/relatorios/alunos-por-turma | Retorna turma, alunos matriculados e vagas restantes |
 
-O agrupamento do relatório será realizado diretamente no SQL Server utilizando `JOIN` e `GROUP BY`.
+O agrupamento será executado pelo SQL Server com JOIN e GROUP BY, sem montar o relatório em memória no C#.
 
 ## Status HTTP
 
 | Status | Situação |
 | --- | --- |
-| `200 OK` | Consulta ou atualização realizada com sucesso |
-| `201 Created` | Recurso criado com sucesso |
-| `400 Bad Request` | Parâmetros ou corpo da requisição inválidos |
-| `404 Not Found` | Aluno ou turma não encontrado |
-| `409 Conflict` | Aluno inativo, turma sem vaga ou matrícula duplicada |
-| `500 Internal Server Error` | Erro inesperado da aplicação ou infraestrutura |
+| 200 OK | Consulta, atualização ou exclusão lógica realizada |
+| 201 Created | Recurso criado |
+| 400 Bad Request | Rota, parâmetros ou corpo inválidos |
+| 404 Not Found | Registro não encontrado ou aluno já inativo na exclusão |
+| 409 Conflict | Regra de negócio impede uma matrícula, em etapa futura |
+| 500 Internal Server Error | Falha inesperada de aplicação ou infraestrutura |
 
 ## Organização do código
 
-```text
+~~~text
 EscolaEvolucional.Api/
-|-- App_Start/       # Configuração da Web API
-|-- Controllers/     # Entrada HTTP e respostas
-|-- Contracts/       # Objetos de requisição e resposta
-|-- Models/          # Modelos do domínio
-|-- Services/        # Regras de negócio e casos de uso
-|-- Repositories/    # Acesso ao SQL Server com Dapper
-|-- Infrastructure/  # Conexões e componentes externos
-`-- Web.config       # Configurações da aplicação
-```
+|-- App_Start/          # Configuração da Web API
+|-- Controllers/        # Entrada HTTP e composição das respostas
+|-- DTOs/               # Contratos de entrada, saída, erro e paginação
+|-- Models/             # Modelos usados no domínio e pelo Dapper
+|-- Services/           # Validações e coordenação dos casos de uso
+|-- Repository/         # SQL manual e acesso ao banco com Dapper
+|-- Infrastructure/
+|   +-- Data/           # Criação de conexões com o SQL Server
++-- Web.config          # Configuração geral da aplicação
+~~~
 
-Os controllers não devem conter regras de negócio. Eles recebem a requisição e convertem o resultado do serviço em uma resposta HTTP. Os serviços coordenam as regras e os repositórios concentram o SQL e o acesso ao banco.
+AlunosController não contém SQL. AlunoService concentra validações e decisões do caso de uso. AlunoRepository contém comandos SQL parametrizados.
 
-## Testes
+O controller possui um construtor que recebe IAlunoService, permitindo testes e substituição da implementação. O construtor sem parâmetros monta as dependências para que o ASP.NET Web API 2 consiga criar o controller sem um contêiner de injeção de dependência. Em uma aplicação maior, essa composição seria centralizada em um contêiner configurado no início da aplicação.
 
-Os testes automatizados ainda serão adicionados. A prioridade será cobrir os seguintes cenários da matrícula:
+## Verificações executadas no CRUD de alunos
 
-- matrícula realizada com sucesso;
-- aluno inexistente ou inativo;
-- turma inexistente ou sem vagas;
-- matrícula duplicada;
-- falha na operação e garantia de rollback.
+Foram executados build em Debug e testes manuais da API com IIS Express, cobrindo:
+
+- paginação com e sem filtro;
+- página e tamanho inválidos;
+- consulta existente, inexistente e identificador inválido;
+- cadastro válido, corpo vazio, campos inválidos e data futura;
+- atualização válida, inexistente e com data futura;
+- exclusão lógica e segunda tentativa de exclusão;
+- confirmação de que o registro permaneceu no banco com Ativo igual a false.
+
+Ainda não existe uma suíte de testes automatizados. Ela será adicionada prioritariamente para as regras da matrícula.
 
 ## Licença
 
