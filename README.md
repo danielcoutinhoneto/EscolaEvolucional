@@ -349,6 +349,19 @@ Foram executados build em Debug e testes manuais com IIS Express, cobrindo:
 
 Ainda não existe uma suíte de testes automatizados. Ela será adicionada prioritariamente para as regras da matrícula.
 
+## Verificações executadas na matrícula
+
+Foram executados build em Debug e testes manuais com IIS Express, cobrindo:
+
+- criação válida, com uma matrícula inserida e uma vaga decrementada;
+- payload e IDs inválidos (`400 Bad Request`);
+- aluno e turma inexistentes (`404 Not Found`);
+- aluno inativo, turma lotada e matrícula duplicada (`409 Conflict`);
+- rollback quando uma falha é provocada após o `INSERT`, sem matrícula nem vaga alterada;
+- duas requisições concorrentes para a última vaga: uma retorna `201 Created`, a outra `409 Conflict`, sem ultrapassar a capacidade da turma.
+
+A Sprint de testes automatizados das regras de matrícula permanece planejada como melhoria bônus. Os testes acima confirmam o comportamento atual da API, mas não substituem uma suíte automatizada.
+
 ## Licença
 
-Consulte o arquivo [LICENSE.txt](LICENSE.txt).
+Consulte o arquivo [LICENSE.txt](LICENSE).
