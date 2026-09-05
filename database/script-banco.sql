@@ -27,14 +27,18 @@ CREATE TABLE dbo.Turma (
     Nome VARCHAR(80) NOT NULL,
     Periodo VARCHAR(20) NOT NULL,        -- Manha, Tarde ou Noite
     VagasTotal INT NOT NULL,
-    VagasDisponiveis INT NOT NULL
+    VagasDisponiveis INT NOT NULL,
+    CONSTRAINT CK_Turma_VagasDisponiveis
+        CHECK (VagasDisponiveis >= 0 AND VagasDisponiveis <= VagasTotal)
 );
 
 CREATE TABLE dbo.Matricula (
     Id INT IDENTITY(1,1) PRIMARY KEY,
     AlunoId INT NOT NULL FOREIGN KEY REFERENCES dbo.Aluno(Id),
     TurmaId INT NOT NULL FOREIGN KEY REFERENCES dbo.Turma(Id),
-    DataMatricula DATETIME NOT NULL DEFAULT GETDATE()
+    DataMatricula DATETIME NOT NULL DEFAULT GETDATE(),
+    CONSTRAINT UQ_Matricula_AlunoId_TurmaId
+        UNIQUE (AlunoId, TurmaId)
 );
 GO
 

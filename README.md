@@ -59,12 +59,12 @@ Execute no SQL Server o arquivo [database/script-banco.sql](database/script-banc
 
 O script cria o banco TesteEscola, as tabelas Aluno, Turma e Matricula e os dados iniciais utilizados nos testes.
 
-O arquivo recebido no desafio foi versionado sem alterações estruturais. Foram avaliadas duas proteções adicionais:
+O arquivo recebido no desafio foi versionado com duas proteções adicionais de integridade:
 
-- uma restrição CHECK para impedir que VagasDisponiveis seja negativa ou maior que VagasTotal;
-- uma restrição ou índice UNIQUE para impedir a matrícula repetida do mesmo aluno na mesma turma.
+- `CK_Turma_VagasDisponiveis`: restrição `CHECK` que impede `VagasDisponiveis` de ficar negativa ou maior que `VagasTotal`;
+- `UQ_Matricula_AlunoId_TurmaId`: restrição `UNIQUE` composta que impede a matrícula repetida do mesmo aluno na mesma turma.
 
-Essas proteções ainda não foram aplicadas. Elas serão reavaliadas durante a implementação da matrícula transacional e, se adicionadas, serão explicadas neste README.
+Essas restrições protegem o banco mesmo quando uma gravação não passa pela API ou quando duas requisições concorrentes tentam alterar os mesmos dados. As validações da aplicação continuam necessárias para devolver mensagens e status HTTP adequados.
 
 > Atenção: o script remove e recria as tabelas quando é executado. Dados locais existentes nessas tabelas serão perdidos.
 
@@ -259,15 +259,38 @@ Exemplo:
 
 O relatório é agregado pelo SQL Server com LEFT JOIN, COUNT(m.Id) e GROUP BY. Dessa forma, turmas sem matrícula também aparecem com quantidade igual a zero, sem agrupamento em memória no C#.
 
-## Endpoint da próxima etapa
-
-### Matrículas
+## Matrículas
 
 | Método | Rota | Descrição |
 | --- | --- | --- |
 | POST | /api/matriculas | Matricula um aluno em uma turma |
 
-A matrícula deverá verificar aluno ativo, vaga disponível e duplicidade. A inserção da matrícula e o decremento da vaga deverão ocorrer na mesma transação.
+### Criar matrícula
+
+~~~http
+POST /api/matriculas
+Content-Type: application/json
+
+{
+  "alunoId": 1,
+  "turmaId": 2
+}
+~~~
+
+Em caso de sucesso, a API retorna `201 Created`:
+
+~~~json
+{
+  "id": 9,
+  "alunoId": 1,
+  "turmaId": 2,
+  "dataMatricula": "2026-09-05T09:19:51"
+}
+~~~
+
+A operação valida aluno existente e ativo, turma existente, vaga disponível e matrícula duplicada. O Repository abre uma única conexão, inicia uma transação serializável, insere a matrícula e decrementa a vaga. As duas gravações recebem o mesmo objeto de transação: qualquer falha executa rollback.
+
+Para concorrência, a turma é consultada com `UPDLOCK, HOLDLOCK` e a atualização só ocorre quando `VagasDisponiveis > 0`. A constraint `UNIQUE` do banco continua sendo a proteção final contra duplicidade.
 
 ## Status HTTP
 
@@ -277,7 +300,7 @@ A matrícula deverá verificar aluno ativo, vaga disponível e duplicidade. A in
 | 201 Created | Recurso criado |
 | 400 Bad Request | Rota, parâmetros ou corpo inválidos |
 | 404 Not Found | Registro não encontrado ou aluno já inativo na exclusão |
-| 409 Conflict | Regra de negócio impede uma matrícula, em etapa futura |
+| 409 Conflict | Regra de negócio impede a matrícula: aluno inativo, turma sem vaga ou duplicidade |
 | 500 Internal Server Error | Falha inesperada de aplicação ou infraestrutura |
 
 ## Organização do código
@@ -297,7 +320,7 @@ EscolaEvolucional.Api/
 
 Os controllers não contêm SQL. Os services coordenam os casos de uso e convertem modelos em DTOs. Os repositories concentram o SQL manual e o acesso ao banco com Dapper.
 
-Os controllers possuem construtores que recebem interfaces de service, permitindo testes e substituição das implementações. Os construtores sem parâmetros montam as dependências para que o ASP.NET Web API 2 consiga criar AlunosController, TurmasController e RelatoriosController sem um contêiner de injeção de dependência. Em uma aplicação maior, essa composição seria centralizada em um contêiner configurado no início da aplicação.
+Os controllers possuem construtores que recebem interfaces de service, permitindo testes e substituição das implementações. Os construtores sem parâmetros montam as dependências para que o ASP.NET Web API 2 consiga criar AlunosController, TurmasController, RelatoriosController e MatriculasController sem um contêiner de injeção de dependência. Em uma aplicação maior, essa composição seria centralizada em um contêiner configurado no início da aplicação.
 
 ## Verificações executadas no CRUD de alunos
 
@@ -326,6 +349,19 @@ Foram executados build em Debug e testes manuais com IIS Express, cobrindo:
 
 Ainda não existe uma suíte de testes automatizados. Ela será adicionada prioritariamente para as regras da matrícula.
 
+## Verificações executadas na matrícula
+
+Foram executados build em Debug e testes manuais com IIS Express, cobrindo:
+
+- criação válida, com uma matrícula inserida e uma vaga decrementada;
+- payload e IDs inválidos (`400 Bad Request`);
+- aluno e turma inexistentes (`404 Not Found`);
+- aluno inativo, turma lotada e matrícula duplicada (`409 Conflict`);
+- rollback quando uma falha é provocada após o `INSERT`, sem matrícula nem vaga alterada;
+- duas requisições concorrentes para a última vaga: uma retorna `201 Created`, a outra `409 Conflict`, sem ultrapassar a capacidade da turma.
+
+A Sprint de testes automatizados das regras de matrícula permanece planejada como melhoria bônus. Os testes acima confirmam o comportamento atual da API, mas não substituem uma suíte automatizada.
+
 ## Licença
 
-Consulte o arquivo [LICENSE.txt](LICENSE.txt).
+Consulte o arquivo [LICENSE.txt](LICENSE).
