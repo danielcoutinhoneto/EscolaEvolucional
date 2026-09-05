@@ -4,7 +4,7 @@ API REST para controle de alunos, turmas e matrículas escolares, desenvolvida c
 
 O projeto utiliza .NET Framework 4.8, ASP.NET Web API 2, SQL Server e Dapper com SQL escrito manualmente. A organização em camadas mantém o tratamento HTTP no controller, as regras no service e o acesso ao banco no repository.
 
-> **Status atual:** os requisitos obrigatórios estão implementados: CRUD de alunos, turmas, relatório SQL, matrícula transacional e testes unitários das regras de matrícula. O cache de turmas foi implementado como bônus; a tela de consulta de alunos está implementada e em verificação final.
+> **Status atual:** os requisitos obrigatórios estão implementados: CRUD de alunos, turmas, relatório SQL, matrícula transacional e testes unitários das regras de matrícula. O cache de turmas e a tela de consulta de alunos foram implementados como bônus.
 
 ## Stack
 
@@ -368,7 +368,7 @@ msbuild .\EscolaEvolucional.Tests\EscolaEvolucional.Tests.csproj /t:Rebuild /p:C
 vstest.console .\EscolaEvolucional.Tests\bin\Debug\net48\EscolaEvolucional.Tests.dll /Platform:x64
 ~~~
 
-A última execução local aprovou 16 de 16 testes. Transação SQL, rollback físico e concorrência continuam cobertos pelas verificações funcionais da Sprint 04; testes de integração automatizados exigem um banco isolado e são uma evolução futura.
+A última execução local da suíte aprovou 19 de 19 testes: 16 cobrem regras e mapeamento HTTP de matrícula, e 3 cobrem cache de turmas. Transação SQL, rollback físico e concorrência continuam cobertos pelas verificações funcionais da Sprint 04; testes de integração automatizados exigem um banco isolado e são uma evolução futura.
 
 ## Licença
 
